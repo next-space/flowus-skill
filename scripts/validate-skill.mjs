@@ -51,7 +51,7 @@ if (!openaiYaml.includes(`$${skillName}`)) {
 
 for (const file of await listFiles(root)) {
   const relativeFile = path.relative(root, file).split(path.sep).join('/');
-  if (relativeFile.startsWith('.git/')) continue;
+  if (relativeFile === '.git' || relativeFile.startsWith('.git/')) continue;
   const content = await readFile(file, 'utf8');
   for (const term of forbiddenTerms) {
     if (content.includes(term)) {
@@ -104,4 +104,3 @@ async function listFiles(dir) {
   }
   return files;
 }
-
