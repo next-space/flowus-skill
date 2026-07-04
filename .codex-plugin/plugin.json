@@ -1,0 +1,36 @@
+{
+  "name": "flowus-skill",
+  "version": "0.1.9",
+  "description": "FlowUs CLI bootstrap skill for Codex.",
+  "author": {
+    "name": "FlowUs",
+    "url": "https://flowus.cn"
+  },
+  "homepage": "https://flowus.cn/dev/integrations",
+  "license": "MIT",
+  "keywords": [
+    "flowus",
+    "codex",
+    "skill",
+    "cli",
+    "api"
+  ],
+  "skills": "./skills/flowus-cli",
+  "interface": {
+    "displayName": "FlowUs CLI Skill",
+    "shortDescription": "FlowUs CLI bootstrap skill.",
+    "longDescription": "Lightweight skill that directs coding agents to use FlowUs CLI help as the source of truth, with JSON output, authentication, and write-safety conventions.",
+    "developerName": "FlowUs",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://flowus.cn",
+    "defaultPrompt": [
+      "Use the FlowUs CLI skill to inspect my FlowUs auth state."
+    ],
+    "brandColor": "#00A86B"
+  }
+}
+

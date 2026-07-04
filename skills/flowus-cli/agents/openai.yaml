@@ -1,0 +1,5 @@
+interface:
+  display_name: "FlowUs CLI"
+  short_description: "Use the FlowUs CLI to call APIs, manage content, and upload files."
+  default_prompt: "Use $flowus-cli to inspect FlowUs CLI help, authenticate if needed, and run FlowUs commands safely."
+

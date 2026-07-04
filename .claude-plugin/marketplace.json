@@ -1,0 +1,19 @@
+{
+  "name": "flowus-agent-skills",
+  "metadata": {
+    "description": "FlowUs CLI bootstrap skill for using the V2 API.",
+    "version": "0.1.9"
+  },
+  "plugins": [
+    {
+      "name": "flowus-skill",
+      "description": "FlowUs CLI bootstrap skill for coding agents.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/flowus-cli"
+      ]
+    }
+  ]
+}
+
