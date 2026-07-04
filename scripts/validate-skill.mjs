@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillName = 'flowus-cli';
+const pluginId = 'flowus-skill';
 const productName = 'FlowUs';
 const commandName = 'flowus';
 const tokenEnv = 'FLOWUS_TOKEN';
+const productUrl = 'https://flowus.cn';
 const forbiddenTerms = ['Build' + 'in', 'build' + 'in', 'BUILD' + 'IN'];
 
 const errors = [];
@@ -19,14 +21,38 @@ await requireFile('.claude-plugin/marketplace.json');
 await requireFile(`skills/${skillName}/SKILL.md`);
 await requireFile(`skills/${skillName}/agents/openai.yaml`);
 
-for (const jsonFile of [
-  '.codex-plugin/plugin.json',
-  '.agents/plugins/marketplace.json',
-  '.claude-plugin/marketplace.json',
-  'package.json',
-]) {
-  await parseJson(jsonFile);
-}
+const codexPlugin = await parseJson('.codex-plugin/plugin.json');
+const agentsMarketplace = await parseJson('.agents/plugins/marketplace.json');
+const claudeMarketplace = await parseJson('.claude-plugin/marketplace.json');
+const packageJson = await parseJson('package.json');
+
+expectEqual(packageJson.name, pluginId, 'package.json name');
+expectEqual(packageJson.private, true, 'package.json private');
+expectEqual(packageJson.scripts?.check, 'node scripts/validate-skill.mjs', 'package.json scripts.check');
+
+expectEqual(codexPlugin.name, pluginId, '.codex-plugin/plugin.json name');
+expectEqual(codexPlugin.skills, `./skills/${skillName}`, '.codex-plugin/plugin.json skills');
+expectIncludes(codexPlugin.description, productName, '.codex-plugin/plugin.json description');
+expectEqual(codexPlugin.author?.name, productName, '.codex-plugin/plugin.json author.name');
+expectEqual(codexPlugin.author?.url, productUrl, '.codex-plugin/plugin.json author.url');
+expectEqual(codexPlugin.homepage, `${productUrl}/dev/integrations`, '.codex-plugin/plugin.json homepage');
+expectIncludes(codexPlugin.interface?.displayName, productName, '.codex-plugin/plugin.json interface.displayName');
+expectIncludes(codexPlugin.interface?.shortDescription, productName, '.codex-plugin/plugin.json interface.shortDescription');
+expectIncludes(codexPlugin.interface?.longDescription, productName, '.codex-plugin/plugin.json interface.longDescription');
+expectEqual(codexPlugin.interface?.developerName, productName, '.codex-plugin/plugin.json interface.developerName');
+expectEqual(codexPlugin.interface?.websiteURL, productUrl, '.codex-plugin/plugin.json interface.websiteURL');
+expectIncludes(codexPlugin.interface?.defaultPrompt?.join('\n'), productName, '.codex-plugin/plugin.json interface.defaultPrompt');
+
+expectEqual(agentsMarketplace.name, 'flowus-codex-plugins', '.agents/plugins/marketplace.json name');
+expectEqual(agentsMarketplace.plugins?.[0]?.name, pluginId, '.agents/plugins/marketplace.json plugins[0].name');
+expectEqual(agentsMarketplace.plugins?.[0]?.source?.source, 'local', '.agents/plugins/marketplace.json plugins[0].source.source');
+expectEqual(agentsMarketplace.plugins?.[0]?.source?.path, './', '.agents/plugins/marketplace.json plugins[0].source.path');
+expectEqual(agentsMarketplace.plugins?.[0]?.policy?.installation, 'AVAILABLE', '.agents/plugins/marketplace.json plugins[0].policy.installation');
+
+expectEqual(claudeMarketplace.name, 'flowus-agent-skills', '.claude-plugin/marketplace.json name');
+expectEqual(claudeMarketplace.plugins?.[0]?.name, pluginId, '.claude-plugin/marketplace.json plugins[0].name');
+expectEqual(claudeMarketplace.plugins?.[0]?.source, './', '.claude-plugin/marketplace.json plugins[0].source');
+expectEqual(claudeMarketplace.plugins?.[0]?.skills?.[0], `./skills/${skillName}`, '.claude-plugin/marketplace.json plugins[0].skills[0]');
 
 const skill = await readText(`skills/${skillName}/SKILL.md`);
 if (!skill.includes(`name: ${skillName}`)) {
@@ -80,9 +106,22 @@ async function requireFile(relativePath) {
 
 async function parseJson(relativePath) {
   try {
-    JSON.parse(await readText(relativePath));
+    return JSON.parse(await readText(relativePath));
   } catch {
     errors.push(`${relativePath} must be valid JSON.`);
+    return {};
+  }
+}
+
+function expectEqual(actual, expected, label) {
+  if (actual !== expected) {
+    errors.push(`${label} must be ${JSON.stringify(expected)}.`);
+  }
+}
+
+function expectIncludes(actual, expected, label) {
+  if (typeof actual !== 'string' || !actual.includes(expected)) {
+    errors.push(`${label} must include ${expected}.`);
   }
 }
 
