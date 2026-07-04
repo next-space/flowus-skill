@@ -9,8 +9,40 @@ license: MIT
 Use the FlowUs CLI (`flowus`) for FlowUs V2 API work: pages, blocks,
 databases, search, Markdown content, and files.
 
+The CLI source repository may be private. Do not ask the user to clone source
+code before using the CLI. Install or update the released binary from the
+FlowUs CDN when the command is missing or outdated.
+
 Do not assume old FlowUs skill names such as `flowus-auth`, `flowus-page`, or
 `flowus:flowus-login`.
+
+## Install or update first
+
+Before using `flowus`, verify that the binary is available:
+
+```bash
+command -v flowus >/dev/null 2>&1 || curl -fsSL https://cdn2.flowus.cn/flowus-cli/install | bash
+flowus version
+```
+
+On Windows PowerShell:
+
+```powershell
+irm https://cdn2.flowus.cn/flowus-cli/install.ps1 | iex
+flowus version
+```
+
+If a command is missing or help output looks stale, run:
+
+```bash
+flowus update
+```
+
+Useful install overrides:
+
+- `FLOWUS_INSTALL_DIR` - install directory.
+- `FLOWUS_VERSION` - exact release version, such as `v0.1.10`.
+- `FLOWUS_CLI_RELEASE_BASE_URL` - alternate release base URL for tests.
 
 ## First rule: ask the CLI
 
@@ -21,6 +53,7 @@ request fields:
 - `flowus help <command...>` - show usage, options, examples, and notes for any
   command or subcommand.
 - `flowus api ls` - list public API endpoints and request field hints.
+- `flowus api ls --plain` - compact endpoint list for scanning.
 - `flowus api --docs <PATH> -X <METHOD>` - show agent-readable Markdown docs
   for one endpoint, including parameters, examples, and safety notes.
 - `flowus api --spec <PATH> -X <METHOD>` - show the exact embedded OpenAPI
@@ -28,45 +61,157 @@ request fields:
 - `flowus --json doctor` - inspect local authentication and configuration state
   when auth or base URL selection is unclear.
 - `flowus --json whoami` - verify the active FlowUs identity.
-- `flowus --json markdown get <page-id>` - retrieve page content as Markdown.
+- `flowus markdown get <page-id>` - retrieve page content as Markdown.
 
 If you are unsure about syntax, request body fields, pagination, auth source,
 or command coverage, run help first.
+
+## Authentication and configuration
+
+Check `FLOWUS_TOKEN` before asking the user to log in. Credential precedence is:
+
+1. `--token <token>`
+2. `FLOWUS_TOKEN`
+3. saved login credentials in the FlowUs credential store
+
+Use these checks:
+
+```bash
+flowus --json doctor
+flowus --json whoami
+```
+
+If no token is available and the user wants an interactive setup:
+
+```bash
+flowus login --manual
+```
+
+Common environment variables:
+
+- `FLOWUS_TOKEN` - bearer token for API calls.
+- `FLOWUS_BASE_URL` - API base URL; default is `https://api.flowus.cn`.
+- `FLOWUS_CONFIG_DIR` - config directory; default follows the FlowUs profile.
+- `FLOWUS_USER_AGENT` - custom user agent suffix.
+
+Do not print bearer tokens, write them into files, or paste them into request
+bodies. Do not call the FlowUs V2 API with `curl`; use the CLI so auth,
+product defaults, retries, and error formatting stay consistent.
 
 ## Working rules
 
 - Use `--json` for stable machine-readable stdout.
 - Keep JSON request bodies in local files and pass them with `--body <file>`.
 - Keep Markdown replacement content in local files and pass it with `--file <file>`.
-- Check `FLOWUS_TOKEN` first. Credential precedence is `--token`, then
-  `FLOWUS_TOKEN`, then saved login credentials.
-- Do not print or save bearer tokens outside the FlowUs CLI credential store.
 - Prefer domain commands over `api call`; `flowus api --docs` names a
   recommended domain command when one exists.
-- Do not call the FlowUs V2 API with `curl`.
 - Before write operations, confirm IDs, file paths, URLs, and body files come
   from user-authorized input.
+- For paginated commands, inspect JSON output for cursors and repeat with the
+  command's cursor option.
+- The CLI intentionally rejects DELETE API calls. Do not work around that for
+  destructive operations unless the user explicitly asks for a different tool.
 
-## Useful commands
+## Common workflows
 
-- Pages: `page get/create/update`, `page property get`
-- Blocks: `block get/children/append/update/append-file`
-- Databases: `database get/query/create/update`
-- Markdown: `markdown get/put`
-- Search: `search text`, `search semantic`
-- Files: `file upload`
-- Fallback: `flowus --json api call ...`
-
-For fallback API work, use this lookup sequence before constructing a request:
+### Read a page
 
 ```bash
-flowus api ls
+flowus --json page get <page_id>
+flowus markdown get <page_id> > page.md
+```
+
+Use Markdown for page content work whenever possible. It is easier to inspect,
+edit, and diff than raw block JSON.
+
+### Replace page Markdown
+
+```bash
+flowus markdown put --file page.md <page_id>
+```
+
+Only run this after confirming the target page ID and replacement file.
+
+### Create or update a page with JSON
+
+Create a local JSON body file, then pass it to the CLI:
+
+```bash
+flowus --json page create --body page.json
+flowus --json page update --body patch.json <page_id>
+```
+
+For idempotent creates, use `--idempotency-key <key>`.
+
+### Blocks and children
+
+```bash
+flowus --json block get <block_id>
+flowus --json block children <block_id>
+flowus --json block append <block_id> --body children.json
+flowus --json block update <block_id> --body block-patch.json
+```
+
+### Databases
+
+```bash
+flowus --json database get <database_id>
+flowus --json database query <database_id> --body query.json
+flowus --json page property get <page_id> <property_id>
+```
+
+Use `flowus api --docs` or command help to inspect filter and sort body shapes
+before writing `query.json`.
+
+### Search
+
+```bash
+flowus --json search text "roadmap" --page-size 10
+flowus --json search semantic "tasks about quarterly planning" --space-id <space_id> --page-size 10
+```
+
+Use text search for exact titles, keywords, and known phrases. Use semantic
+search when intent matters more than exact wording.
+
+### Files
+
+Upload a local file for a parent page:
+
+```bash
+flowus --json file upload --parent-page <page_id> ./report.pdf
+```
+
+Append a FlowUs-hosted file block with the returned object name and size:
+
+```bash
+flowus --json block append-file <block_id> --oss-name <oss_name> --size <bytes>
+```
+
+Append an external file URL:
+
+```bash
+flowus --json block append-file <block_id> --external-url https://example.com/report.pdf
+```
+
+## Fallback API calls
+
+Use `api call` only when no domain command covers the endpoint. Lookup sequence:
+
+```bash
+flowus api ls --plain
 flowus api --docs /v2/blocks/{block_id}/children -X PATCH
 flowus api --spec /v2/blocks/{block_id}/children -X PATCH
 flowus --json api call PATCH /v2/blocks/:block_id/children --param block_id=<block_id> --body body.json
 ```
 
-Use `flowus api ls --plain` when you need a compact list of request fields for
-operations such as `updateBlock` or `appendBlockChildren`. Use `--spec` when
-the full OpenAPI schema is needed.
+`--param` fills path placeholders first; remaining keys become query
+parameters. Use `--header NAME=VALUE` for headers such as `If-Match`.
 
+## Troubleshooting
+
+- Command not found: install from `https://cdn2.flowus.cn/flowus-cli/install`.
+- Unknown command or option: run `flowus update`, then `flowus <command> --help`.
+- Authentication failure: run `flowus --json doctor`, check `FLOWUS_TOKEN`, then
+  run `flowus login --manual` if needed.
+- Unexpected API shape: run `flowus api --docs <PATH> -X <METHOD>` and
+  `flowus api --spec <PATH> -X <METHOD>` before retrying.
