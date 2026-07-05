@@ -16,16 +16,38 @@ FlowUs CDN when the command is missing or outdated.
 Do not assume old FlowUs skill names such as `flowus-auth`, `flowus-page`, or
 `flowus:flowus-login`.
 
-## Install or update first
+## Mandatory preflight
 
-Before using `flowus`, verify that the binary is available:
+When this skill is selected for any FlowUs task, complete this preflight before
+API work, searches, reads, writes, counts, uploads, or endpoint-specific
+planning:
+
+1. Ensure the released CLI binary is installed:
 
 ```bash
 command -v flowus >/dev/null 2>&1 || curl -fsSL https://cdn2.flowus.cn/flowus-cli/install | bash
 flowus version
 ```
 
-On Windows PowerShell:
+2. Verify authentication and active identity:
+
+```bash
+flowus --json doctor
+flowus --json whoami
+```
+
+Continue only when the checks show authenticated FlowUs credentials. If
+authentication is missing or invalid, stop before making API calls or drawing
+conclusions from incomplete data. Tell the user to run:
+
+```bash
+flowus login --manual
+```
+
+or set `FLOWUS_TOKEN`, then state the exact command or workflow to rerun after
+authentication is available.
+
+On Windows PowerShell, install with:
 
 ```powershell
 irm https://cdn2.flowus.cn/flowus-cli/install.ps1 | iex
@@ -81,7 +103,8 @@ flowus --json doctor
 flowus --json whoami
 ```
 
-If no token is available and the user wants an interactive setup:
+If no token is available, do not proceed with FlowUs API work. Ask the user to
+authenticate with:
 
 ```bash
 flowus login --manual
