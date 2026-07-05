@@ -1,10 +1,10 @@
 # FlowUs CLI Skill
 
-Private Codex plugin bundle for the FlowUs CLI agent skill.
+Private FlowUs CLI agent skill.
 
 ## Install
 
-Install this private repository as a plugin or install the skill directly:
+Install this private repository:
 
 ```bash
 npx skills add next-space/flowus-skill --skill flowus-cli
@@ -28,4 +28,3 @@ for authentication, and avoid raw `curl` calls for FlowUs API work.
 ```bash
 npm run check
 ```
-

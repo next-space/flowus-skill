@@ -2,11 +2,10 @@
   "name": "flowus-skill",
   "private": true,
   "version": "0.1.9",
-  "description": "FlowUs CLI agent skill bundle.",
+  "description": "FlowUs CLI agent skill.",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "check": "node scripts/validate-skill.mjs"
   }
 }
-
