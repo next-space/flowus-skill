@@ -211,11 +211,48 @@ flowus --json block update <block_id> --body block-patch.json
 ```bash
 flowus --json database get <database_id>
 flowus --json database query <database_id> --body query.json
+flowus --json database mutate <database_id> --body mutation.json --idempotency-key <key>
 flowus --json page property get <page_id> <property_id>
 ```
 
 Use `flowus api --docs` or command help to inspect filter and sort body shapes
 before writing `query.json`.
+
+Use `database mutate` for one atomic, permission-checked database write that can
+rename properties by stable property ID, add properties, create records, and
+update explicitly identified records. Read the database first and use the
+returned property IDs. Never model a property rename by creating another text
+property with the requested name, and never overwrite existing records when the
+user asked to create a new record.
+
+For example, when the user asks to rename the title property to `姓名` and add a
+record titled `白居易`, write this body to `mutation.json`:
+
+```json
+{
+  "properties": [
+    {
+      "id": "<title_property_id>",
+      "name": "姓名"
+    }
+  ],
+  "create_records": [
+    {
+      "title": "白居易"
+    }
+  ]
+}
+```
+
+Then run one command with a stable idempotency key:
+
+```bash
+flowus --json database mutate <database_id> --body mutation.json --idempotency-key <key>
+```
+
+Do not split a combined request into independent property and record writes.
+The server validates write access and commits all requested changes in one
+transaction.
 
 ### Search
 
