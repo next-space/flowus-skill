@@ -1,7 +1,24 @@
 ---
 name: flowus-cli
 description: Use when an agent needs to call the FlowUs API through the FlowUs CLI, authenticate FlowUs, upload a file, create or update a page, query a database, search content, edit Markdown page content, or any task involving the `flowus` command.
-license: MIT
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - flowus
+    envVars:
+      - name: FLOWUS_TOKEN
+        required: false
+        description: Optional FlowUs bearer token; browser login or saved CLI credentials may be used instead.
+      - name: FLOWUS_BASE_URL
+        required: false
+        description: Optional FlowUs API base URL.
+      - name: FLOWUS_CONFIG_DIR
+        required: false
+        description: Optional directory containing FlowUs CLI credentials and configuration.
+      - name: FLOWUS_USER_AGENT
+        required: false
+        description: Optional suffix for the FlowUs CLI user agent.
 ---
 
 # FlowUs CLI
@@ -25,7 +42,12 @@ planning:
 1. Ensure the released CLI binary is installed:
 
 ```bash
-command -v flowus >/dev/null 2>&1 || curl -fsSL https://cdn2.flowus.cn/flowus-cli/install | bash
+if ! command -v flowus >/dev/null 2>&1; then
+  flowus_install_script="$(mktemp)"
+  curl -fsSL --proto '=https' --tlsv1.2 https://cdn2.flowus.cn/flowus-cli/install -o "$flowus_install_script"
+  bash "$flowus_install_script"
+  rm -f "$flowus_install_script"
+fi
 flowus version
 ```
 
@@ -74,7 +96,10 @@ flowus --json login --manual
 On Windows PowerShell, install with:
 
 ```powershell
-irm https://cdn2.flowus.cn/flowus-cli/install.ps1 | iex
+$flowusInstallScript = Join-Path ([System.IO.Path]::GetTempPath()) "flowus-cli-install.ps1"
+Invoke-WebRequest https://cdn2.flowus.cn/flowus-cli/install.ps1 -OutFile $flowusInstallScript
+& $flowusInstallScript
+Remove-Item $flowusInstallScript
 flowus version
 ```
 

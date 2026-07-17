@@ -32,8 +32,11 @@ const skill = await readText(`skills/${skillName}/SKILL.md`);
 if (!skill.includes(`name: ${skillName}`)) {
   errors.push(`skills/${skillName}/SKILL.md frontmatter name must be ${skillName}.`);
 }
-if (!skill.includes('license: MIT')) {
-  errors.push(`skills/${skillName}/SKILL.md must include license: MIT.`);
+if (skill.includes('license:')) {
+  errors.push(`skills/${skillName}/SKILL.md must not override ClawHub's MIT-0 license.`);
+}
+if (!skill.includes('metadata:\n  openclaw:')) {
+  errors.push(`skills/${skillName}/SKILL.md must declare ClawHub runtime metadata.`);
 }
 if (!skill.includes(productName) || !skill.includes(commandName) || !skill.includes(tokenEnv)) {
   errors.push(`skills/${skillName}/SKILL.md must describe ${productName}, ${commandName}, and ${tokenEnv}.`);
