@@ -3,9 +3,6 @@ name: flowus-cli
 description: Use when an agent needs to call the FlowUs API through the FlowUs CLI, authenticate FlowUs, upload a file, create or update a page, query a database, search content, edit Markdown page content, or any task involving the `flowus` command.
 metadata:
   openclaw:
-    requires:
-      bins:
-        - flowus
     envVars:
       - name: FLOWUS_TOKEN
         required: false
@@ -32,9 +29,8 @@ official FlowUs CDN only after the user explicitly approves it.
 
 ## Mandatory preflight
 
-When this skill is selected for any FlowUs task, complete this preflight before
-API work, searches, reads, writes, counts, uploads, or endpoint-specific
-planning:
+Complete this preflight before a remote FlowUs API call. CLI help, endpoint
+documentation, and offline planning do not require authentication.
 
 1. Inspect whether the CLI is available without installing or updating it:
 
@@ -50,6 +46,13 @@ If the CLI is missing or outdated, explain that the official installer is
 available at `https://cdn2.flowus.cn/flowus-cli/install` (or
 `https://cdn2.flowus.cn/flowus-cli/install.ps1` on Windows). Do not download,
 execute, or update it until the user explicitly approves that action.
+
+After approval, use only the official URL and a user-approved version. Download
+an installer to a temporary file; show its source, version, and SHA-256 hash;
+and compare it with an official checksum or signature before execution. If no
+official integrity data is available, stop and offer manual installation rather
+than executing an unverified installer. Remove temporary installer files after
+the attempt.
 
 2. If the CLI is installed, inspect authentication and active identity:
 
@@ -120,7 +123,7 @@ request fields:
 If you are unsure about syntax, request body fields, pagination, auth source,
 or command coverage, run help first.
 
-## Authentication and configuration
+## Credentials and configuration
 
 The CLI resolves credentials in this precedence order:
 
@@ -128,24 +131,15 @@ The CLI resolves credentials in this precedence order:
 2. `FLOWUS_TOKEN`
 3. saved login credentials in the FlowUs credential store
 
-Use these checks:
-
-```bash
-flowus --json doctor
-flowus --json whoami
-```
+This is CLI resolution behavior, not authorization to expose a credential. Do
+not pass `--token` in agent commands, logs, or shared shells: it can leak via
+process listings or shell history. Do not ask users to paste bearer tokens into
+chat. Use preconfigured `FLOWUS_TOKEN`, saved credentials, or an approved secret
+channel; redact any credential that appears in command output.
 
 If no valid credentials are available, offer browser login, manual setup, or an
-approved `FLOWUS_TOKEN` secret path. Wait for the user to select one before
-starting authentication:
-
-```bash
-flowus --json login --manual
-```
-
-Do not ask the user to paste bearer tokens into chat. Ask them to provide
-credentials through `FLOWUS_TOKEN`, saved login credentials, or an approved
-secret channel, then rerun `flowus --json doctor` and `flowus --json whoami`.
+approved secret path and wait for the user to select one. After the selected
+login succeeds, rerun `flowus --json doctor` and `flowus --json whoami`.
 
 Common environment variables:
 
@@ -165,12 +159,25 @@ product defaults, retries, and error formatting stay consistent.
 - Keep Markdown replacement content in local files and pass it with `--file <file>`.
 - Prefer domain commands over `api call`; `flowus api --docs` names a
   recommended domain command when one exists.
-- Before write operations, confirm IDs, file paths, URLs, and body files come
-  from user-authorized input.
 - For paginated commands, inspect JSON output for cursors and repeat with the
   command's cursor option.
-- The CLI intentionally rejects DELETE API calls. Do not work around that for
-  destructive operations unless the user explicitly asks for a different tool.
+
+## Write safety
+
+Before any remote create, update, append, upload, replace, or raw API write:
+
+1. Confirm the exact target, operation, and expected impact (including record
+   count, affected blocks, or uploaded files).
+2. Read the current target first when feasible. For a Markdown replacement,
+   compare the existing content unless the user explicitly authorized a full
+   replacement. Use `--if-match` when the CLI exposes a version or ETag.
+3. If the user did not provide both an exact target and the intended content,
+   present a short change summary and wait for confirmation.
+4. Confirm files and external URLs are user-authorized and do not contain
+   credentials or private data not intended for the target workspace.
+
+The CLI intentionally rejects DELETE API calls. This Skill does not execute or
+suggest bypasses; use a dedicated deletion workflow with a second confirmation.
 
 ## Common workflows
 
@@ -224,41 +231,10 @@ flowus --json page property get <page_id> <property_id>
 Use `flowus api --docs` or command help to inspect filter and sort body shapes
 before writing `query.json`.
 
-Use `database mutate` for one atomic, permission-checked database write that can
-rename properties by stable property ID, add properties, create records, and
-update explicitly identified records. Read the database first and use the
-returned property IDs. Never model a property rename by creating another text
-property with the requested name, and never overwrite existing records when the
-user asked to create a new record.
-
-For example, when the user asks to rename the title property to `姓名` and add a
-record titled `白居易`, write this body to `mutation.json`:
-
-```json
-{
-  "properties": [
-    {
-      "id": "<title_property_id>",
-      "name": "姓名"
-    }
-  ],
-  "create_records": [
-    {
-      "title": "白居易"
-    }
-  ]
-}
-```
-
-Then run one command with a stable idempotency key:
-
-```bash
-flowus --json database mutate <database_id> --body mutation.json --idempotency-key <key>
-```
-
-Do not split a combined request into independent property and record writes.
-The server validates write access and commits all requested changes in one
-transaction.
+Use `database mutate` for one atomic, permission-checked database write. Read
+the database first; use stable property IDs for changes; use a stable idempotency
+key; and never overwrite existing records when the user asked to create records.
+Use `flowus api --docs` to obtain the exact body shape.
 
 ### Search
 
@@ -301,14 +277,16 @@ flowus api --spec /v2/blocks/{block_id}/children -X PATCH
 flowus --json api call PATCH /v2/blocks/:block_id/children --param block_id=<block_id> --body body.json
 ```
 
-`--param` fills path placeholders first; remaining keys become query
-parameters. Use `--header NAME=VALUE` for headers such as `If-Match`.
+For `POST`, `PUT`, or `PATCH`, read `--docs` and `--spec` first and apply the
+write-safety rules above. `--param` fills path placeholders first; remaining
+keys become query parameters. Use `--header NAME=VALUE` only for non-secret
+headers such as `If-Match`; never put credentials or sessions in headers.
 
 ## Troubleshooting
 
 - Command not found: offer the official installer at `https://cdn2.flowus.cn/flowus-cli/install` and wait for explicit approval before using it.
 - Unknown command or option: ask approval before running `flowus update`, then run `flowus <command> --help`.
-- Authentication failure: run `flowus --json doctor`, check `FLOWUS_TOKEN`, then
-  offer `flowus login --manual` if needed and wait for explicit approval.
+- Authentication failure: run `flowus --json doctor`, then offer an approved
+  credential or login path.
 - Unexpected API shape: run `flowus api --docs <PATH> -X <METHOD>` and
   `flowus api --spec <PATH> -X <METHOD>` before retrying.
