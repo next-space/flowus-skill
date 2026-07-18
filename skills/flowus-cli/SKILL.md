@@ -30,9 +30,6 @@ The CLI source repository may be private. Do not ask the user to clone source
 code before using the CLI. Install or update the released binary from the
 official FlowUs CDN only after the user explicitly approves it.
 
-Do not assume old FlowUs skill names such as `flowus-auth`, `flowus-page`, or
-`flowus:flowus-login`.
-
 ## Mandatory preflight
 
 When this skill is selected for any FlowUs task, complete this preflight before
