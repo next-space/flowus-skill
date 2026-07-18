@@ -1,4 +1,4 @@
 interface:
   display_name: "FlowUs CLI"
   short_description: "Install and use the FlowUs CLI to call APIs, manage content, and upload files."
-  default_prompt: "Use $flowus-cli to install or update the FlowUs CLI if needed, run auth preflight, choose the right login method for this environment, inspect CLI help, and run FlowUs commands."
+  default_prompt: "Use $flowus-cli to inspect the FlowUs CLI and authentication state, obtain explicit approval before installing, updating, or logging in, inspect CLI help, and run authorized FlowUs commands."
