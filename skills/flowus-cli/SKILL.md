@@ -137,9 +137,33 @@ process listings or shell history. Do not ask users to paste bearer tokens into
 chat. Use preconfigured `FLOWUS_TOKEN`, saved credentials, or an approved secret
 channel; redact any credential that appears in command output.
 
-If no valid credentials are available, offer browser login, manual setup, or an
+If no credential is configured, offer browser login, manual setup, or an
 approved secret path and wait for the user to select one. After the selected
 login succeeds, rerun `flowus --json doctor` and `flowus --json whoami`.
+
+### OAuth refresh and sandbox permissions
+
+A saved browser-OAuth credential may require write access to the credential
+store even for a read-only API command, because the CLI rotates and atomically
+persists tokens before sending the API request.
+
+- If `error.code` is `credential_store_permission_denied` or
+  `needsCredentialWritePermission` is `true`, do not start login. Request
+  narrowly scoped write access to the directory containing `credentialsPath`,
+  then rerun `flowus --json doctor` and the original command. Reauthentication
+  cannot fix a local filesystem denial.
+- If the error code is `oauth_refresh_failed` or `oauth_refresh_rejected` and
+  `reauthorizationRequired` is `false`, retry the same command later; do not
+  start login.
+- Offer login only when `reauthorizationRequired` or `refreshTokenExpired` is
+  `true`, or OAuth explicitly reports that the refresh token is invalid,
+  expired, or revoked.
+- Older CLI versions may report only `Operation not permitted` or OS error 1.
+  With stored, refreshable OAuth credentials, treat this as probable
+  credential-store sandbox denial and inspect the reported path and sandbox
+  before assuming the token is revoked.
+
+Never copy `credentials.json` into the workspace or expose its contents.
 
 Common environment variables:
 
@@ -286,7 +310,8 @@ headers such as `If-Match`; never put credentials or sessions in headers.
 
 - Command not found: offer the official installer at `https://cdn2.flowus.cn/flowus-cli/install` and wait for explicit approval before using it.
 - Unknown command or option: ask approval before running `flowus update`, then run `flowus <command> --help`.
-- Authentication failure: run `flowus --json doctor`, then offer an approved
-  credential or login path.
+- Authentication failure: run `flowus --json doctor`, then follow the OAuth
+  refresh and sandbox-permission rules above. Do not equate every failure or
+  HTTP 401 with an expired refresh token.
 - Unexpected API shape: run `flowus api --docs <PATH> -X <METHOD>` and
   `flowus api --spec <PATH> -X <METHOD>` before retrying.
