@@ -118,6 +118,12 @@ request fields:
 - `flowus --json doctor` - inspect local authentication and configuration state
   when auth or base URL selection is unclear.
 - `flowus --json whoami` - verify the active FlowUs identity.
+- `flowus --json workspace` - inspect the current workspace and credential
+  boundary.
+- `flowus --json workspace directory` - list the favorites, team, shared, and
+  private sidebar sections.
+- `flowus --json fetch <link-or-id>` - resolve a FlowUs link or ID and read the
+  matching page, database, or block.
 - `flowus markdown get <page-id>` - retrieve page content as Markdown.
 
 If you are unsure about syntax, request body fields, pagination, auth source,
@@ -205,6 +211,27 @@ suggest bypasses; use a dedicated deletion workflow with a second confirmation.
 
 ## Common workflows
 
+### Discover pages, members, and objects
+
+```bash
+flowus --json workspace
+flowus --json workspace directory --page-size 100
+flowus --json page list --page-size 100
+flowus --json page list --parent-id <page_id> --page-size 100
+flowus --json page team --page-size 100
+flowus --json page private --page-size 100
+flowus --json page shared --page-size 100
+flowus --json page favorites --page-size 100
+flowus --json user ls --query "display name" --page-size 100
+flowus --json fetch <link_or_id>
+```
+
+`page list` returns one level of page-like children. Omitting `--parent-id`
+lists the workspace root. When a returned node has children, pass its ID as
+`--parent-id` to inspect the next level. Use the section commands when the task
+refers to the FlowUs sidebar rather than a specific parent. `user ls --query`
+matches display names, not email addresses.
+
 ### Read a page
 
 ```bash
@@ -234,6 +261,18 @@ flowus --json page update --body patch.json <page_id>
 
 For idempotent creates, use `--idempotency-key <key>`.
 
+### Edit or duplicate a page
+
+```bash
+flowus --json page edit <page_id> --old "old text" --new "new text"
+flowus --json page duplicate <page_id> --parent-id <parent_id> --title "Copy title"
+```
+
+`page edit` requires an exact, unique match by default. Use `--replace-all`
+only when replacing every occurrence is intentional. Before duplicating, read
+the source page and confirm the destination parent; omit `--parent-id` to keep
+the copy beside the source.
+
 ### Blocks and children
 
 ```bash
@@ -249,6 +288,10 @@ flowus --json block update <block_id> --body block-patch.json
 flowus --json database get <database_id>
 flowus --json database query <database_id> --body query.json
 flowus --json database mutate <database_id> --body mutation.json --idempotency-key <key>
+flowus --json database view list <database_id>
+flowus --json database view get <database_id> <view_id>
+flowus --json database view create <database_id> --body view.json --idempotency-key <key>
+flowus --json database view update <database_id> <view_id> --body view-patch.json --if-match <etag>
 flowus --json page property get <page_id> <property_id>
 ```
 
@@ -259,6 +302,10 @@ Use `database mutate` for one atomic, permission-checked database write. Read
 the database first; use stable property IDs for changes; use a stable idempotency
 key; and never overwrite existing records when the user asked to create records.
 Use `flowus api --docs` to obtain the exact body shape.
+
+Create database views with a stable idempotency key. Read a view before
+updating it and pass the returned weak ETag with `--if-match` so concurrent
+changes are detected instead of silently overwritten.
 
 ### Search
 
