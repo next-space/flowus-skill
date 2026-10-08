@@ -75,6 +75,13 @@ for (const expected of [
   expectIncludes(skill, expected, `skills/${skillName}/SKILL.md`);
 }
 
+const nativeReference = await readText('skills/flowus-cli/references/native-database-fields.md');
+const nativeBodies = [...nativeReference.matchAll(/\x60\x60\x60json\n([\s\S]*?)\n\x60\x60\x60/g)];
+if (nativeBodies.length !== 5) errors.push('Native database recipe must contain its five complete JSON request files.');
+for (const [, body] of nativeBodies) {
+  try { JSON.parse(body); } catch { errors.push('Native database recipe contains invalid JSON.'); }
+}
+
 const openaiYaml = await readText(`skills/${skillName}/agents/openai.yaml`);
 for (const field of ['display_name', 'short_description', 'default_prompt']) {
   if (!new RegExp(`^\\s*${field}:`, 'm').test(openaiYaml)) {

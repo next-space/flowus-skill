@@ -1,6 +1,6 @@
 ---
 name: flowus-cli
-description: Use when an agent needs to call the FlowUs API through the FlowUs CLI, authenticate FlowUs, upload a file, create or update a page, query a database, search content, edit Markdown page content, or any task involving the `flowus` command.
+description: Use when an agent needs to call the FlowUs API through the FlowUs CLI, authenticate FlowUs, upload a file, create or update a page, query a database, configure native relation/formula/rollup fields, search content, edit Markdown page content, or any task involving the `flowus` command.
 metadata:
   openclaw:
     envVars:
@@ -22,6 +22,11 @@ metadata:
 
 Use the FlowUs CLI (`flowus`) for FlowUs V2 API work: pages, blocks,
 databases, search, Markdown content, and files.
+
+Carry out the user-authorized operation through the installed CLI; do not stop
+at describing commands when execution is requested. For native database fields,
+read [the operation recipe](references/native-database-fields.md) before preparing
+request files. It covers schema, record relations, formula reads and verification.
 
 The CLI source repository may be private. Do not ask the user to clone source
 code before using the CLI. Install or update the released binary from the
@@ -184,7 +189,9 @@ product defaults, retries, and error formatting stay consistent.
 
 ## Working rules
 
-- Use `--json` for stable machine-readable stdout.
+- Use `--json` for stable machine-readable stdout. Require `ok:true` and
+  read the API object under `data` (created IDs are `data.id`). For `ok:false`,
+  inspect `error`; do not treat a failed command as a completed operation.
 - Keep JSON request bodies in local files and pass them with `--body <file>`.
 - Keep Markdown replacement content in local files and pass it with `--file <file>`.
 - Prefer domain commands over `api call`; `flowus api --docs` names a
@@ -196,13 +203,15 @@ product defaults, retries, and error formatting stay consistent.
 
 Before any remote create, update, append, upload, replace, or raw API write:
 
-1. Confirm the exact target, operation, and expected impact (including record
+1. Verify the exact target, operation, and expected impact (including record
    count, affected blocks, or uploaded files).
 2. Read the current target first when feasible. For a Markdown replacement,
    compare the existing content unless the user explicitly authorized a full
    replacement. Use `--if-match` when the CLI exposes a version or ETag.
-3. If the user did not provide both an exact target and the intended content,
-   present a short change summary and wait for confirmation.
+3. The user\'s task authorizes its requested changes. Resolve IDs from reads or
+   creation results and choose routine implementation details within that scope;
+   do not require the user to supply generated IDs or repeat an existing approval.
+   Ask only when targets remain ambiguous or the change exceeds the request.
 4. Confirm files and external URLs are user-authorized and do not contain
    credentials or private data not intended for the target workspace.
 
