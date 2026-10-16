@@ -82,6 +82,15 @@ for (const [, body] of nativeBodies) {
   try { JSON.parse(body); } catch { errors.push('Native database recipe contains invalid JSON.'); }
 }
 
+const blockRecipe = await readText('skills/flowus-cli/references/block-own-text.md');
+for (const term of ['callout.rich_text', 'toggle.rich_text', 'placeholder', 'block get', 'block children', 'Do not clear or rebuild', 'Markdown']) {
+  expectIncludes(blockRecipe, term, 'block own-text recipe');
+}
+const blockBodies = [...blockRecipe.matchAll(/\x60\x60\x60json\n([\s\S]*?)\n\x60\x60\x60/g)].map(([, body]) => JSON.parse(body));
+if (blockBodies.length !== 2 || !blockBodies[0].children[0].children[0].callout.rich_text.length || !blockBodies[1].callout.rich_text.length) {
+  errors.push('Block recipe must provide nested own-text creation and a local callout patch.');
+}
+
 const openaiYaml = await readText(`skills/${skillName}/agents/openai.yaml`);
 for (const field of ['display_name', 'short_description', 'default_prompt']) {
   if (!new RegExp(`^\\s*${field}:`, 'm').test(openaiYaml)) {
