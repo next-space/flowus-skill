@@ -1,0 +1,66 @@
+{
+  "parent": {
+    "page_id": "AUTHORIZED_PARENT_PAGE_ID"
+  },
+  "title": [
+    {
+      "type": "text",
+      "text": {
+        "content": "旅行记忆"
+      }
+    }
+  ],
+  "content_language": "zh-Hans",
+  "default_view_title": "全部记录",
+  "properties": {
+    "标题": {
+      "type": "title"
+    },
+    "地点": {
+      "type": "rich_text"
+    },
+    "出行日期": {
+      "type": "date"
+    },
+    "类别": {
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "name": "计划"
+          },
+          {
+            "name": "体验"
+          },
+          {
+            "name": "踩坑"
+          }
+        ]
+      }
+    },
+    "内容": {
+      "type": "rich_text"
+    },
+    "记录时间": {
+      "type": "date"
+    },
+    "来源 Agent": {
+      "type": "rich_text"
+    },
+    "来源会话": {
+      "type": "rich_text"
+    },
+    "来源链接": {
+      "type": "url"
+    },
+    "事件键": {
+      "type": "rich_text"
+    },
+    "已失效": {
+      "type": "checkbox"
+    },
+    "取代记录 ID": {
+      "type": "rich_text"
+    }
+  }
+}

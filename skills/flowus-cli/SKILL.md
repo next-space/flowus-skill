@@ -218,6 +218,11 @@ Before any remote create, update, append, upload, replace, or raw API write:
 The CLI intentionally rejects DELETE API calls. This Skill does not execute or
 suggest bypasses; use a dedicated deletion workflow with a second confirmation.
 
+## Memory templates
+
+For travel, journal or reading memory tables, use [the template recipe](references/memory-templates.md).
+It includes three ready-to-create schemas and append-only agent usage rules.
+
 ## Common workflows
 
 ### Discover pages, members, and objects
