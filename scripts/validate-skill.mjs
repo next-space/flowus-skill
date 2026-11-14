@@ -91,6 +91,22 @@ if (blockBodies.length !== 2 || !blockBodies[0].children[0].children[0].callout.
   errors.push('Block recipe must provide nested own-text creation and a local callout patch.');
 }
 
+// Keep the shipped one-call create payloads usable without a schema migration.
+for (const template of ['travel', 'journal', 'reading']) {
+  const body = await parseJson(`skills/${skillName}/templates/memory/${template}.json`);
+  expectEqual(body.parent?.page_id, 'AUTHORIZED_PARENT_PAGE_ID', `${template} explicit parent`);
+  expectEqual(body.default_view_title, '全部记录', `${template} initial view`);
+  expectEqual(Object.values(body.properties || {}).filter(p => p.type === 'title').length, 1, `${template} title count`);
+  for (const [name, type] of Object.entries({ '内容': 'rich_text', '记录时间': 'date', '来源 Agent': 'rich_text', '来源会话': 'rich_text', '来源链接': 'url', '事件键': 'rich_text', '已失效': 'checkbox', '取代记录 ID': 'rich_text' })) {
+    expectEqual(body.properties?.[name]?.type, type, `${template} ${name}`);
+  }
+  for (const property of Object.values(body.properties || {})) {
+    if (!['title', 'rich_text', 'date', 'url', 'checkbox', 'select'].includes(property.type)) errors.push(`${template}: unsupported memory property`);
+  }
+}
+expectIncludes(skill, 'references/memory-templates.md', 'memory recipe link');
+await requireFile(`skills/${skillName}/references/memory-templates.md`);
+
 const openaiYaml = await readText(`skills/${skillName}/agents/openai.yaml`);
 for (const field of ['display_name', 'short_description', 'default_prompt']) {
   if (!new RegExp(`^\\s*${field}:`, 'm').test(openaiYaml)) {
