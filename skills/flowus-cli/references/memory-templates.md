@@ -23,7 +23,7 @@ flowus --json database create --body /tmp/memory-template.json
 MCP 检查工具错误标志和返回的数据库对象。失败不能当成功，响应丢失先搜索
 目标父页下的同名表再决定重试；创建接口不保证幂等，不盲目重复创建。
 若用户要三张表，分别调用三次；当前接口一次不能原子创建三张表。
-创建后 `table_describe`（CLI `database get <id>`）核对标题、列和默认视图，
+创建后 `table_describe`（CLI `database get <id>`）核对标题和列，再用 `list_database_views` 核对默认视图，
 后续读回不算额外的创建调用。
 
 ## 各表写什么
